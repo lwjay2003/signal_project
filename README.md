@@ -67,3 +67,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Project Member
 - student ID: i6314340 //Wenjie Liao
 - student ID: i6336504 //Siyao Zhou
+
+## UML Diagrams
+- Added UML class diagrams of Alert Generation System, Data Storage System, Patient Identification System, and Data-Access Layer.
+- Added State and Sequence Diagrams for the Alert Generation System.
+- Link: https://github.com/lwjay2003/signal_project/blob/master/uml_models 
