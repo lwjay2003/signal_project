@@ -42,6 +42,7 @@ public class AlertGenerator {
         List<PatientRecord> records = dataStorage.getRecords(0, System.currentTimeMillis(), System.currentTimeMillis());
         checkBloodPressure(patient, records);
 
+
     }
     private void checkBloodPressure(Patient patient, List<PatientRecord> records) {
         // Implementation goes here
@@ -86,6 +87,7 @@ public class AlertGenerator {
                 }
             }
         }
+
 
 
 
