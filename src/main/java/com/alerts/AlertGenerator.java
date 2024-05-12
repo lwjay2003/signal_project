@@ -13,7 +13,7 @@ import java.util.List;
  * relies on a {@link DataStorage} instance to access patient data and evaluate
  * it against specific health criteria.
  */
-public class AlertGenerator {
+public class AlertGenerator implements TriggerAlert {
     private DataStorage dataStorage;
 
     /**
@@ -174,6 +174,7 @@ public class AlertGenerator {
              *
              * @param alert the alert object containing details about the alert condition
              */
+
             private void triggerAlert(Alert alert) {
              System.out.println("Alert triggered: " + alert.toString());
             }
