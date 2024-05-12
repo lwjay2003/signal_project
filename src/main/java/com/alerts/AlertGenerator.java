@@ -4,6 +4,7 @@ import com.data_management.DataStorage;
 import com.data_management.Patient;
 import com.data_management.PatientRecord;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,9 +42,82 @@ public class AlertGenerator {
         // Implementation goes here
         List<PatientRecord> records = dataStorage.getRecords(0, System.currentTimeMillis(), System.currentTimeMillis());
         checkBloodPressure(patient, records);
-
-
+        checkBloodSaturationAlerts(patient, records);
+        checkHypotensiveHypoxemiaAlerts(patient, records);
+        checkECGDataAlerts(patient, records);
     }
+
+    private void checkECGDataAlerts(Patient patient, List<PatientRecord> records) {
+        List<Long> timestamps = new ArrayList<>();
+        List<Double> heartRates = new ArrayList<>();
+
+        for (PatientRecord record : records) {
+            if (record.getRecordType().equals("HeartRate")) {
+                heartRates.add(record.getMeasurementValue());
+                timestamps.add(record.getTimestamp());
+
+                // Abnormal Heart Rate Alert
+                double heartRate = record.getMeasurementValue();
+                if (heartRate < 50 || heartRate > 100) {
+                    triggerAlert(new Alert(record.getPatientId(), "AbnormalHeartRate", record.getTimestamp()));
+                }
+            }
+        }
+
+        // Check for Irregular Beat Patterns
+        for (PatientRecord record : records) {
+            for (int i = 1; i < timestamps.size(); i++) {
+                long interval = timestamps.get(i) - timestamps.get(i - 1);
+                if (Math.abs(interval - 60000 / heartRates.get(i)) > 200) { // 200 ms tolerance for irregularity
+                    triggerAlert(new Alert(record.getPatientId(), "IrregularHeartBeat", timestamps.get(i)));
+                }
+            }
+        }
+    }
+
+
+    private void checkHypotensiveHypoxemiaAlerts(Patient patient, List<PatientRecord> records) {
+        for (PatientRecord record : records) {
+            if (record.getRecordType().equals("BloodPressure")) {
+                String[] bpValues = record.getMeasurementValue().split("/");
+                double systolic = Double.parseDouble(bpValues[0]);
+
+                // Check if there's a corresponding low saturation record
+                for (PatientRecord saturationRecord : records) {
+                    if (saturationRecord.getRecordType().equals("BloodSaturation")) {
+                        double saturation = saturationRecord.getMeasurementValue();
+
+                        if (systolic < 90 && saturation < 92) {
+                            triggerAlert(new Alert(record.getPatientId(), "HypotensiveHypoxemiaAlert", record.getTimestamp()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void checkBloodSaturationAlerts(Patient patient, List<PatientRecord> records) {
+        Double lastSaturation = null;
+        long lastTimestamp = -1;
+
+        for (PatientRecord record : records) {
+            if (record.getRecordType().equals("BloodSaturation")) {
+                double saturation = record.getMeasurementValue();
+
+                //low saturation alert
+                if(saturation< 92) {
+                    triggerAlert(new Alert(record.getPatientId(), "LowBloodSaturation", record.getTimestamp()));
+                }
+                //rapid saturation drop alert
+                if(lastSaturation != -1 && (lastSaturation - saturation) >=  5 &&(record.getTimestamp() - lastTimestamp)<= 600000) {
+                    triggerAlert(new Alert(record.getPatientId(), "RapidBloodSaturationDrop", record.getTimestamp()));
+                }
+                lastSaturation = saturation;
+                lastTimestamp = record.getTimestamp();
+            }
+        }
+    }
+
     private void checkBloodPressure(Patient patient, List<PatientRecord> records) {
         // Implementation goes here
         Double lastSystolic = null;
@@ -87,6 +161,7 @@ public class AlertGenerator {
                 }
             }
         }
+
 
 
 
