@@ -19,21 +19,22 @@ import static org.mockito.Mockito.*;
 
 public class AlertGeneratorTest {
     private DataStorage storage;
-    //private AlertGenerator alertGenerator;
+    private AlertGenerator alertGenerator;
     private List<Alert> alerts;
 
     @Test
     void setUp() {
+        storage = Mockito.mock(DataStorage.class);
+        alerts = new ArrayList<>();
 
-        AlertGenerator alertGenerator = new AlertGenerator(storage) {
+         alertGenerator = new AlertGenerator(storage) {
 
             @Override
             protected void triggerAlert(Alert alert) {
                 alerts.add(alert);
             }
         };
-        storage = Mockito.mock(DataStorage.class);
-        alerts = new ArrayList<>();
+
 
 
         // Add mock data to the storage
@@ -75,12 +76,12 @@ public class AlertGeneratorTest {
     @Test
     void testLowBloodSaturationAlerts() {
         AlertGenerator alertGenerator = new AlertGenerator(storage);
-        Patient patient = new Patient(1);
 
         List<PatientRecord> records = new ArrayList<>();
         records.add(new PatientRecord(1, 91.0, "BloodSaturation", 1714376789050L));
 
         when(storage.getRecords(eq(1), anyLong(), anyLong())).thenReturn(records);
+        Patient patient = new Patient(1);
 
         alertGenerator.evaluateData(patient);
 

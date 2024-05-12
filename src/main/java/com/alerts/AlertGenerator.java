@@ -33,7 +33,7 @@ public class AlertGenerator {
     /**
      * Evaluates the specified patient's data to determine if any alert conditions
      * are met. If a condition is met, an alert is triggered via the
-     * {@link # triggerAlert}
+     * {@link #triggerAlert}
      * method. This method should define the specific conditions under which an
      * alert will be triggered.
      *
@@ -41,7 +41,8 @@ public class AlertGenerator {
      */
     public void evaluateData(Patient patient) {
         // Implementation goes here
-        List<PatientRecord> records = dataStorage.getRecords(1, System.currentTimeMillis(), System.currentTimeMillis());
+
+        List<PatientRecord> records = dataStorage.getRecords(record.getPatientId(), 0,System.currentTimeMillis());
         checkBloodPressure(patient, records);
         checkBloodSaturationAlerts(patient, records);
         checkHypotensiveHypoxemiaAlerts(patient, records);
@@ -71,7 +72,7 @@ public class AlertGenerator {
                 // Abnormal Heart Rate Alert
                 double heartRate = record.getMeasurementValue();
                 if (heartRate < 50 || heartRate > 100) {
-                    triggerAlert(new Alert(record.getPatientId(), "AbnormalHeartRate", record.getTimestamp()));
+                    triggerAlert(new Alert(patient.getPatientId(), "AbnormalHeartRate", record.getTimestamp()));
                 }
             }
         }
