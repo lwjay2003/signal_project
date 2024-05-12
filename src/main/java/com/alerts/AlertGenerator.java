@@ -28,13 +28,14 @@ public class AlertGenerator implements TriggerAlert {
         this.dataStorage = dataStorage;
     }
 
+
+
     /**
      * Evaluates the specified patient's data to determine if any alert conditions
      * are met. If a condition is met, an alert is triggered via the
      * {@link # triggerAlert}
      * method. This method should define the specific conditions under which an
-     * alert
-     * will be triggered.
+     * alert will be triggered.
      *
      * @param patient the patient data to evaluate for alert conditions
      */
@@ -47,6 +48,17 @@ public class AlertGenerator implements TriggerAlert {
         checkECGDataAlerts(patient, records);
     }
 
+
+
+    /**
+     * Checks the ECG data for alerts related to abnormal heart rates and irregular beat patterns.
+     * Abnormal heart rates are defined as below 50 or above 100 beats per minute. Irregular beat patterns
+     * are identified based on the time intervals between successive heartbeats, with a tolerance of 200 milliseconds
+     * from the expected interval calculated based on the average beats per minute.
+     *
+     * @param patient The patient whose ECG data is being checked.
+     * @param records A list of patient records containing heart rate data and associated timestamps.
+     */
     private void checkECGDataAlerts(Patient patient, List<PatientRecord> records) {
         List<Long> timestamps = new ArrayList<>();
         List<Double> heartRates = new ArrayList<>();
@@ -76,6 +88,16 @@ public class AlertGenerator implements TriggerAlert {
     }
 
 
+
+    /**
+     * Checks for concurrent hypotension and hypoxemia within the patient's records.
+     * Hypotension is identified by a systolic blood pressure below 90 mmHg. Hypoxemia is defined as
+     * a blood saturation level below 92%. An alert is triggered if both conditions are found in the
+     * same set of records.
+     *
+     * @param patient The patient whose records are being evaluated.
+     * @param records A list of patient records that includes blood pressure and blood saturation measurements.
+     */
     private void checkHypotensiveHypoxemiaAlerts(Patient patient, List<PatientRecord> records) {
         for (PatientRecord record : records) {
             if (record.getRecordType().equals("BloodPressure")) {
@@ -96,6 +118,16 @@ public class AlertGenerator implements TriggerAlert {
         }
     }
 
+
+
+    /**
+     * Checks for alerts related to blood saturation levels from patient records. It generates alerts for
+     * low blood saturation when the level falls below 92%. Additionally, it checks for rapid drops in saturation,
+     * triggering an alert if the saturation decreases by 5% or more within a 10-minute window.
+     *
+     * @param patient The patient whose blood saturation is being monitored.
+     * @param records A list of patient records that include blood saturation measurements.
+     */
     private void checkBloodSaturationAlerts(Patient patient, List<PatientRecord> records) {
         Double lastSaturation = null;
         long lastTimestamp = -1;
@@ -118,6 +150,19 @@ public class AlertGenerator implements TriggerAlert {
         }
     }
 
+
+
+    /**
+     * Monitors blood pressure records for significant trends and critical threshold breaches.
+     * It tracks consecutive increases or decreases in systolic pressure, triggering alerts if there
+     * are three successive measurements differing by more than 10 mmHg in either direction.
+     * Additionally, it checks for critical blood pressure values and triggers alerts when systolic
+     * pressure exceeds 180 mmHg, drops below 90 mmHg, or when diastolic pressure exceeds 120 mmHg or
+     * falls below 60 mmHg.
+     *
+     * @param patient The patient whose blood pressure is being monitored.
+     * @param records A list of patient records containing blood pressure measurements.
+     */
     private void checkBloodPressure(Patient patient, List<PatientRecord> records) {
         // Implementation goes here
         Double lastSystolic = null;
