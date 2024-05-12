@@ -10,8 +10,8 @@ import java.util.List;
  * of medical records based on specified criteria.
  */
 public class Patient {
-    private int patientId;
-    private List<PatientRecord> patientRecords;
+    private final int patientId;
+    private final List<PatientRecord> patientRecords;
 
     /**
      * Constructs a new Patient with a specified ID.
@@ -62,4 +62,6 @@ public class Patient {
         }
         return filteredRecords;
     }
+
+
 }

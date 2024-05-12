@@ -2,17 +2,17 @@ package com.alerts;
 
 // Represents an alert
 public class Alert {
-    private String patientId;
-    private String condition;
-    private long timestamp;
+    private final int patientId;
+    private final String condition;
+    private final long timestamp;
 
-    public Alert(String patientId, String condition, long timestamp) {
+    public Alert(int patientId, String condition, long timestamp) {
         this.patientId = patientId;
         this.condition = condition;
         this.timestamp = timestamp;
     }
 
-    public String getPatientId() {
+    public int getPatientId() {
         return patientId;
     }
 
@@ -23,4 +23,14 @@ public class Alert {
     public long getTimestamp() {
         return timestamp;
     }
+
+    @Override
+    public String toString() {
+        return "Alert{" +
+                "patientId=" + patientId +
+                ", condition='" + condition + '\'' +
+                ", timestamp=" + timestamp +
+                '}';
+    }
+
 }
