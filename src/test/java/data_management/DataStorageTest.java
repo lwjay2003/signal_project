@@ -10,7 +10,8 @@ import com.data_management.PatientRecord;
 import java.util.List;
 
 class DataStorageTest {
-    private DataStorage storage;
+
+
     @Test
     void setUp() {
         DataStorage storage = new DataStorage();
@@ -25,6 +26,7 @@ class DataStorageTest {
 
 
         // Test if two records are added
+            DataStorage storage = new DataStorage();
             List<PatientRecord> records = storage.getRecords(1, 1714376789050L, 1714376789051L);
             assertEquals(2, records.size()); // Check if two records are retrieved
             assertEquals(100.0, records.get(0).getMeasurementValue()); // Validate first record
@@ -32,11 +34,13 @@ class DataStorageTest {
     }
     @Test
     void testGetRecordsWithNoData() {
+        DataStorage storage = new DataStorage();
         List<PatientRecord> records = storage.getRecords(2, 1714376789050L, 1714376789051L);
         assertTrue(records.isEmpty());
     }
     @Test
     void testAddPatientDataNewPatient() {
+        DataStorage storage = new DataStorage();
         storage.addPatientData(2, 150.0, "WhiteBloodCells", 1714376789052L);
         List<PatientRecord> records = storage.getRecords(2, 1714376789050L, 1714376789053L);
         assertEquals(1, records.size());

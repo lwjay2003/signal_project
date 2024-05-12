@@ -4,9 +4,12 @@ import com.alerts.AlertGenerator;
 import com.data_management.DataStorage;
 import com.data_management.Patient;
 import com.data_management.PatientRecord;
+import com.data_management.FileDataReader;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,20 +19,21 @@ import static org.mockito.Mockito.*;
 
 public class AlertGeneratorTest {
     private DataStorage storage;
-    private AlertGenerator alertGenerator;
+    //private AlertGenerator alertGenerator;
     private List<Alert> alerts;
-    @BeforeEach
+
+    @Test
     void setUp() {
-       storage = mock(DataStorage.class);
-       alerts = new ArrayList<>();
-       AlertGenerator alertGenerator = new AlertGenerator(storage){
 
+        AlertGenerator alertGenerator = new AlertGenerator(storage) {
 
-
-           public void triggerAlert(Alert alert) {
-               alerts.add(alert);
-           }
-       };
+            @Override
+            protected void triggerAlert(Alert alert) {
+                alerts.add(alert);
+            }
+        };
+        storage = Mockito.mock(DataStorage.class);
+        alerts = new ArrayList<>();
 
 
         // Add mock data to the storage
@@ -42,6 +46,8 @@ public class AlertGeneratorTest {
     }
     @Test
     void testBloodPressureTrendAlerts() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
+
         Patient patient = new Patient(1);
         alertGenerator.evaluateData(patient);
 
@@ -52,6 +58,7 @@ public class AlertGeneratorTest {
     }
     @Test
     void testCriticalBloodPressureThresholdAlert() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
         Patient patient = new Patient(1);
         List<PatientRecord> records = new ArrayList<>();
         records.add(new PatientRecord(1, 190.0, "BloodPressure", 1714376789050L));
@@ -67,6 +74,7 @@ public class AlertGeneratorTest {
     }
     @Test
     void testLowBloodSaturationAlerts() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
         Patient patient = new Patient(1);
 
         List<PatientRecord> records = new ArrayList<>();
@@ -83,6 +91,7 @@ public class AlertGeneratorTest {
     }
     @Test
     void testRapidBloodSaturationDropAlerts() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
         Patient patient = new Patient(1);
         List<PatientRecord> records = new ArrayList<>();
         records.add(new PatientRecord(1, 96.0, "BloodSaturation", 1714376789050L));
@@ -99,6 +108,7 @@ public class AlertGeneratorTest {
     }
 @Test
     void testHypotensiveHypoxemiaAlert() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
         Patient patient = new Patient(1);
         List<PatientRecord> records = new ArrayList<>();
         records.add(new PatientRecord(1, 85.0, "BloodPressure", 1714376789050L));
@@ -115,6 +125,7 @@ public class AlertGeneratorTest {
     }
     @Test
     void testIrregularHeartBeatAlerts() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
         Patient patient = new Patient(1);
         List<PatientRecord> records = new ArrayList<>();
         records.add(new PatientRecord(1, 70.0, "HeartRate", 1714376789050L));
@@ -132,6 +143,7 @@ public class AlertGeneratorTest {
     }
     @Test
     void testAbnormalHeartRateAlerts() {
+        AlertGenerator alertGenerator = new AlertGenerator(storage);
         Patient patient = new Patient(1);
         List<PatientRecord> records = new ArrayList<>();
         records.add(new PatientRecord(1, 45.0, "HeartRate", 1714376789050L));

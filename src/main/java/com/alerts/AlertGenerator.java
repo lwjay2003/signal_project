@@ -13,8 +13,8 @@ import java.util.List;
  * relies on a {@link DataStorage} instance to access patient data and evaluate
  * it against specific health criteria.
  */
-public class AlertGenerator implements TriggerAlert {
-    private DataStorage dataStorage;
+public class AlertGenerator {
+    private final DataStorage dataStorage;
 
     /**
      * Constructs an {@code AlertGenerator} with a specified {@code DataStorage}.
@@ -41,7 +41,7 @@ public class AlertGenerator implements TriggerAlert {
      */
     public void evaluateData(Patient patient) {
         // Implementation goes here
-        List<PatientRecord> records = dataStorage.getRecords(0, System.currentTimeMillis(), System.currentTimeMillis());
+        List<PatientRecord> records = dataStorage.getRecords(1, System.currentTimeMillis(), System.currentTimeMillis());
         checkBloodPressure(patient, records);
         checkBloodSaturationAlerts(patient, records);
         checkHypotensiveHypoxemiaAlerts(patient, records);
@@ -101,8 +101,8 @@ public class AlertGenerator implements TriggerAlert {
     private void checkHypotensiveHypoxemiaAlerts(Patient patient, List<PatientRecord> records) {
         for (PatientRecord record : records) {
             if (record.getRecordType().equals("BloodPressure")) {
-                String[] bpValues = record.getMeasurementValue().split("/");
-                double systolic = Double.parseDouble(bpValues[0]);
+                double[] bpValues = new double[]{record.getMeasurementValue()};
+                double systolic = Double.parseDouble(String.valueOf(bpValues[0]));
 
                 // Check if there's a corresponding low saturation record
                 for (PatientRecord saturationRecord : records) {
@@ -141,7 +141,7 @@ public class AlertGenerator implements TriggerAlert {
                     triggerAlert(new Alert(record.getPatientId(), "LowBloodSaturation", record.getTimestamp()));
                 }
                 //rapid saturation drop alert
-                if(lastSaturation != -1 && (lastSaturation - saturation) >=  5 &&(record.getTimestamp() - lastTimestamp)<= 600000) {
+                if(lastSaturation != null && (lastSaturation - saturation) >=  5 &&(record.getTimestamp() - lastTimestamp)<= 600000) {
                     triggerAlert(new Alert(record.getPatientId(), "RapidBloodSaturationDrop", record.getTimestamp()));
                 }
                 lastSaturation = saturation;
@@ -173,9 +173,9 @@ public class AlertGenerator implements TriggerAlert {
         for (PatientRecord record : records) {
             if (record.getRecordType().equals("BloodPressure")) {
 
-                String[] bpValues = record.getMeasurementValue().split("/");
-                double systolic = Double.parseDouble(bpValues[0]);
-                double diastolic = Double.parseDouble(bpValues[1]);
+                double[] bpValues = new double[]{record.getMeasurementValue()};
+                double systolic = Double.parseDouble(String.valueOf(bpValues[0]));
+                double diastolic = Double.parseDouble(String.valueOf(bpValues[1]));
 
                 //trend alert for systolic
                 if (lastSystolic != null ) {
@@ -220,7 +220,7 @@ public class AlertGenerator implements TriggerAlert {
              * @param alert the alert object containing details about the alert condition
              */
 
-            private void triggerAlert(Alert alert) {
+            protected void triggerAlert(Alert alert) {
              System.out.println("Alert triggered: " + alert.toString());
             }
 
