@@ -10,9 +10,11 @@ package com.data_management;
  * taken.
  */
 public class PatientRecord {
+
     private int patientId;
     private String recordType; // Example: ECG, blood pressure, etc.
     private double measurementValue; // Example: heart rate
+    private double[] measurementValues; //Example: blood pressure
     private long timestamp;
 
     /**
@@ -25,9 +27,18 @@ public class PatientRecord {
      * @param timestamp        the time at which the measurement was recorded, in
      *                         milliseconds since epoch
      */
+    // Constructor for single measurement value
     public PatientRecord(int patientId, double measurementValue, String recordType, long timestamp) {
         this.patientId = patientId;
         this.measurementValue = measurementValue;
+        this.recordType = recordType;
+        this.timestamp = timestamp;
+    }
+
+    // Constructor for array measurement values
+    public PatientRecord(int patientId, double[] measurementValues, String recordType, long timestamp) {
+        this.patientId = patientId;
+        this.measurementValues = measurementValues;
         this.recordType = recordType;
         this.timestamp = timestamp;
     }
@@ -48,6 +59,10 @@ public class PatientRecord {
      */
     public double getMeasurementValue() {
         return measurementValue;
+    }
+
+    public double[] getMeasurementValues() {
+        return measurementValues;
     }
 
     /**
