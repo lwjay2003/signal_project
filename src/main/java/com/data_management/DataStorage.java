@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.alerts.AlertGenerator;
+import com.alerts.Alert;
 
 /**
  * Manages storage and retrieval of patient data within a healthcare monitoring
@@ -44,6 +45,16 @@ public class DataStorage {
             patientMap.put(patientId, patient);
         }
         patient.addRecord(measurementValue, recordType, timestamp);
+    }
+
+
+    public void addPatientData(int patientId, double[] measurementValues, String recordType, long timestamp) {
+        Patient patient = patientMap.get(patientId);
+        if (patient == null) {
+            patient = new Patient(patientId);
+            patientMap.put(patientId, patient);
+        }
+        patient.addRecord(measurementValues, recordType, timestamp);
     }
 
     /**
@@ -109,7 +120,8 @@ public class DataStorage {
         }
 
         // Initialize the AlertGenerator with the storage
-        AlertGenerator alertGenerator = new AlertGenerator(storage);
+        List<Alert> alerts = new ArrayList<>();
+        AlertGenerator alertGenerator = new AlertGenerator(storage, alerts);
 
         // Evaluate all patients' data to check for conditions that may trigger alerts
         for (Patient patient : storage.getAllPatients()) {
