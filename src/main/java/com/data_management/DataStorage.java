@@ -62,7 +62,7 @@ public class DataStorage {
     public List<PatientRecord> getRecords(int patientId, long startTime, long endTime) {
         Patient patient = patientMap.get(patientId);
         if (patient != null) {
-            return patient.getRecords(patientId, startTime, endTime);
+            return patient.getRecords(startTime, endTime);
         }
         return new ArrayList<>(); // return an empty list if no patient is found
     }
@@ -87,7 +87,7 @@ public class DataStorage {
         // DataReader is not defined in this scope, should be initialized appropriately.
          DataReader reader = new FileDataReader("path/to/data");
          DataStorage storage = new DataStorage();
-
+         
 
          try {
             reader.readData(storage);

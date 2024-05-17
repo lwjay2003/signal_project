@@ -52,7 +52,7 @@ public class Patient {
      *         range
      * @author Wenjie Liao
      */
-    public List<PatientRecord> getRecords(int patientId, long startTime, long endTime) {
+    public List<PatientRecord> getRecords(long startTime, long endTime) {
         // TODO Implement and test this method
         List<PatientRecord> filteredRecords = new ArrayList<>();
         for (PatientRecord record : patientRecords) {

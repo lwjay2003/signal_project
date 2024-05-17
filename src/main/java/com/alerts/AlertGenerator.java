@@ -42,7 +42,7 @@ public class AlertGenerator {
     public void evaluateData(Patient patient) {
         // Implementation goes here
 
-        List<PatientRecord> records = dataStorage.getRecords(record.getPatientId(), 0,System.currentTimeMillis());
+        List<PatientRecord> records = dataStorage.getRecords(patient.getPatientId(), 0,System.currentTimeMillis());
         checkBloodPressure(patient, records);
         checkBloodSaturationAlerts(patient, records);
         checkHypotensiveHypoxemiaAlerts(patient, records);
