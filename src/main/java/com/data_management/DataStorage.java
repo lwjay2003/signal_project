@@ -1,6 +1,7 @@
 package com.data_management;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -96,13 +97,13 @@ public class DataStorage {
      */
     public static void main(String[] args) {
         // DataReader is not defined in this scope, should be initialized appropriately.
-         DataReader reader = new FileDataReader("path/to/data");
-         DataStorage storage = new DataStorage();
-         
 
-         try {
+        DataStorage storage = new DataStorage();
+
+        try {
+            DataReader reader = new WebSocketDataReader("ws://localhost:8080");
             reader.readData(storage);
-        } catch (IOException e) {
+        } catch (URISyntaxException | IOException e) {
             e.printStackTrace();
         }
 
