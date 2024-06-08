@@ -1,5 +1,7 @@
-package com.data_management;
+package data_management_Test;
 
+import com.data_management.Patient;
+import com.data_management.PatientRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
