@@ -6,6 +6,7 @@ public class Alert {
     private final String condition;
     private final long timestamp;
 
+
     public Alert(int patientId, String condition, long timestamp) {
         this.patientId = patientId;
         this.condition = condition;

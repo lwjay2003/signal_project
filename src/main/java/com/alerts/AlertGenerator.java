@@ -31,7 +31,13 @@ public class AlertGenerator {
         AlertGenerator.alerts = alerts;
     }
 
-
+    public AlertGenerator(DataStorage dataStorage) {
+        if (dataStorage == null) {
+            throw new IllegalArgumentException("DataStorage cannot be null");
+        }
+        AlertGenerator.dataStorage = dataStorage;
+        AlertGenerator.alerts = new ArrayList<>();
+    }
 
 
     /**
@@ -259,6 +265,9 @@ public class AlertGenerator {
                 System.out.println("Alert triggered: " + alert.toString());
             }
 
-        }
+    public List<Alert> getAlerts() {
+        return alerts;
+    }
+}
 
 

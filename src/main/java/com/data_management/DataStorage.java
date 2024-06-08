@@ -25,6 +25,16 @@ public class DataStorage {
     public DataStorage() {
         this.patientMap = new HashMap<>();
     }
+    private static DataStorage instance;
+
+    public static DataStorage getInstance() {
+        if (instance == null) {
+            instance = new DataStorage();
+        }
+        return instance;
+    }
+
+
 
     /**
      * Adds or updates patient data in the storage.
@@ -98,12 +108,14 @@ public class DataStorage {
     public static void main(String[] args) {
         // DataReader is not defined in this scope, should be initialized appropriately.
 
+        String directoryPath = String.valueOf(args[0]);
+        DataReader reader = new FileDataReader(directoryPath);
         DataStorage storage = new DataStorage();
 
         try {
-            DataReader reader = new WebSocketDataReader("ws://localhost:8080");
             reader.readData(storage);
-        } catch (URISyntaxException | IOException e) {
+        } catch (IOException e) {
+            System.err.println("Error reading data: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -128,5 +140,8 @@ public class DataStorage {
         for (Patient patient : storage.getAllPatients()) {
             alertGenerator.evaluateData(patient);
         }
+    }
+    public static synchronized void resetInstance() {
+        instance = null;
     }
 }

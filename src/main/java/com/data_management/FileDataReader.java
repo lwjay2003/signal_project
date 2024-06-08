@@ -53,11 +53,4 @@ public class FileDataReader implements DataReader {
         }
     }
 
-    @Override
-    public void stopReading() {
-
-        }
-
-
-
 }

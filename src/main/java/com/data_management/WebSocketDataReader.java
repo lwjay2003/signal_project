@@ -3,67 +3,69 @@ package com.data_management;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
-import javax.xml.crypto.Data;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
+import java.io.IOException;
 
 public class WebSocketDataReader implements DataReader {
-    public WebSocketClient client;
-    public DataStorage dataStorage;
 
-    public WebSocketDataReader(String serverUri) throws URISyntaxException {
-        this.client = new WebSocketClient(new URI(serverUri)) {
+    private final WebSocketClient webSocketClient;
+    private final DataStorage dataStorage;
+
+    // Constructor to initialize WebSocketDataReader with server URI and DataStorage
+    public WebSocketDataReader(String serverUri, DataStorage dataStorage) throws URISyntaxException {
+        this.dataStorage = dataStorage;
+
+        // Initialize WebSocketClient with the provided server URI
+        this.webSocketClient = new WebSocketClient(new URI(serverUri)) {
+            // Callback method invoked when the WebSocket connection is established
             @Override
             public void onOpen(ServerHandshake handshakedata) {
                 System.out.println("Connected to WebSocket server");
             }
-
+            // Callback method invoked when a message is received from the WebSocket server
             @Override
             public void onMessage(String message) {
-                processData(message);
+                processMessage(message);
             }
-
+            // Callback method invoked when the WebSocket connection is closed
             @Override
             public void onClose(int code, String reason, boolean remote) {
-                System.out.println("Connection closed: " + reason);
+                System.out.println("Disconnected from WebSocket server");
             }
-
+            // Callback method invoked when an error occurs in the WebSocket connection
             @Override
             public void onError(Exception ex) {
                 ex.printStackTrace();
             }
         };
     }
+
+    // this method is used to read the data from the WebSocket server
     @Override
-    public void readData(DataStorage storage) throws IOException {
-        this.dataStorage = storage;
-        client.connect();
+    public void readData(DataStorage dataStorage) throws IOException {
+        this.webSocketClient.connect();
     }
 
-    @Override
-    public void stopReading() {
-        if (client != null && client.isOpen()) {
-            client.close();
+    // this method processes the message received from the WebSocket server
+    public void processMessage(String message) {
+        // Assuming the message format is: patientId,timestamp,label,data
+        String[] parts = message.split(",");
+        if (parts.length != 4) {
+            System.err.println("Invalid message format: " + message);
+            return;
+        }
+        try {
+            int patientId = Integer.parseInt(parts[0]);
+            long timestamp = Long.parseLong(parts[1]);
+            String recordType = parts[2];
+            double measurementValue = Double.parseDouble(parts[3]);
+
+            // Store the data in DataStorage, such as dataStorage.addPatientData(patientId, measurementValue, recordType, timestamp);
+            dataStorage.addPatientData(patientId, measurementValue, recordType, timestamp);
+        } catch (NumberFormatException e) {
+            System.err.println("Error parsing message: " + message);
+            e.printStackTrace();
         }
     }
-
-    private void processData(String message) {
-        String[] data = message.split(",");
-        int patientId = Integer.parseInt(data[0]);
-        long timestamp = Long.parseLong(data[1]);
-        String label = data[2];
-        double value = Double.parseDouble(data[3]);
-
-        dataStorage.addPatientData(patientId, value, label, timestamp);
-    }
-
-    public static void main(String[] args) throws URISyntaxException, IOException {
-        DataStorage dataStorage = new DataStorage();
-        WebSocketDataReader reader = new WebSocketDataReader("ws://localhost:8080");
-        reader.readData(dataStorage);
-
-    }
 }
-
