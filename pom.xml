@@ -24,6 +24,14 @@
             <version>1.5.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+
+
+
         <!-- JUnit 4 for legacy test cases -->
         <dependency>
             <groupId>junit</groupId>

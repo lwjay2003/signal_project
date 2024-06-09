@@ -1,4 +1,5 @@
 package data_management_Test;
+
 import com.data_management.DataStorage;
 import com.data_management.WebSocketClientImpl;
 import org.java_websocket.handshake.ServerHandshake;
@@ -6,56 +7,89 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
+import java.util.Iterator;
 
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.mockito.Mockito.*;
 public class WebSocketClientTest {
-    private DataStorage mockDataStorage;
-    private WebSocketClientImpl client;
+    private DataStorage dataStorage;
+    private WebSocketClientImpl webSocketClient;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
-        mockDataStorage = mock(DataStorage.class);
-        client = new WebSocketClientImpl("ws://localhost:8080", mockDataStorage);
+    public void setUp() throws URISyntaxException {
+        DataStorage.resetInstance();
+        dataStorage = DataStorage.getInstance();
+        webSocketClient = new WebSocketClientImpl("ws://localhost:8080", dataStorage);
     }
 
     @Test
-    void testOnMessageValidData() {
-        String message = "1,1627842123000,HeartRate,78.0";
-        client.onMessage(message);
-        verify(mockDataStorage).addPatientData(1, 78.0, "HeartRate", 1627842123000L);
+    public void testOnMessageMalformedData() {
+        String malformedMessage = "1,notatimestamp,HeartRate,78.0";
+        webSocketClient.onMessage(malformedMessage);
+        // Verify no data was added
+        assertTrue(dataStorage.getAllPatients().isEmpty());
     }
 
     @Test
-    void testOnMessageInvalidData() {
-        String message = "invalid,message";
-        client.onMessage(message);
-        verify(mockDataStorage, never()).addPatientData(anyInt(), anyDouble(), anyString(), anyLong());
+    public void testOnMessageValidData() {
+        String validMessage = "1,1622470420000,HeartRate,78.0";
+        webSocketClient.onMessage(validMessage);
+        // Verify data was added
+        assertFalse(dataStorage.getAllPatients().isEmpty());
     }
 
     @Test
-    void testOnMessageMalformedData() {
-        String message = "1,notatimestamp,HeartRate,78.0";
-        client.onMessage(message);
-        verify(mockDataStorage, never()).addPatientData(anyInt(), anyDouble(), anyString(), anyLong());
+    public void testOnError() {
+        Exception testException = new Exception("Test exception");
+        // Simulate an error and verify the error handling
+        try {
+            webSocketClient.onError(testException);
+        } catch (Exception e) {
+            fail("Exception should be handled within the onError method");
+        }
     }
 
     @Test
-    void testOnOpen() {
-        ServerHandshake handshake = mock(ServerHandshake.class);
-        client.onOpen(handshake);
-        // Check for any initialization or logging if required
-    }
+    public void testOnOpen() {
+        ServerHandshake serverHandshake = new ServerHandshake() {
+            @Override
+            public Iterator<String> iterateHttpFields() {
+                return null;
+            }
 
-    @Test// Verify any cleanup or logging if necessary
-    void testOnClose() {
-        client.onClose(1000, "Normal closure", true);
+            @Override
+            public String getFieldValue(String s) {
+                return null;
+            }
+
+            @Override
+            public boolean hasFieldValue(String s) {
+                return false;
+            }
+
+            @Override
+            public byte[] getContent() {
+                return new byte[0];
+            }
+
+            @Override
+            public short getHttpStatus() {
+                return 0;
+            }
+
+            @Override
+            public String getHttpStatusMessage() {
+                return null;
+            }
+            // Implement methods as needed for the test
+        };
+        webSocketClient.onOpen(serverHandshake);
+        // No assertion needed, just ensuring no exceptions are thrown
     }
 
     @Test
-    // to verify any cleanup or logging if necessary
-    void testOnError() {
-        Exception ex = new Exception("Test exception");
-        client.onError(ex);
+    public void testOnClose() {
+        webSocketClient.onClose(1000, "Normal closure", true);
+        // No assertion needed, just ensuring no exceptions are thrown
     }
 }

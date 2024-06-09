@@ -1,4 +1,5 @@
 package com.alerts;
+
 import com.data_management.DataStorage;
 import com.data_management.Patient;
 import com.data_management.PatientRecord;
@@ -21,12 +22,12 @@ public class AlertGenerator {
     private static List<Alert> alerts;
 
     /**
-     * Constructs an {@code AlertGenerator} with a specified {@code DataStorage}.
-     * The {@code DataStorage} is used to retrieve patient data that this class
-     * will monitor and evaluate.
+     * Constructs an {@code AlertGenerator} with a specified {@code DataStorage}
+     * and a list to store generated alerts.
      *
-     * @param dataStorage the data storage system that provides access to patient
-     *                    data
+     * @param dataStorage the data storage system that provides access to patient data
+     * @param alerts      the list to store generated alerts
+     * @throws IllegalArgumentException if {@code dataStorage} is {@code null}
      */
     public AlertGenerator(DataStorage dataStorage, List<Alert> alerts) {
         if (dataStorage == null) {
@@ -36,6 +37,13 @@ public class AlertGenerator {
         AlertGenerator.alerts = alerts;
     }
 
+    /**
+     * Constructs an {@code AlertGenerator} with a specified {@code DataStorage}.
+     * Initializes the alerts list as an empty list.
+     *
+     * @param dataStorage the data storage system that provides access to patient data
+     * @throws IllegalArgumentException if {@code dataStorage} is {@code null}
+     */
     public AlertGenerator(DataStorage dataStorage) {
         if (dataStorage == null) {
             throw new IllegalArgumentException("DataStorage cannot be null");
@@ -44,15 +52,12 @@ public class AlertGenerator {
         AlertGenerator.alerts = new ArrayList<>();
     }
 
-
     /**
      * Evaluates the specified patient's data to determine if any alert conditions
-     * are met. If a condition is met, an alert is triggered via the
-     * {@link #triggerAlert}
-     * method. This method should define the specific conditions under which an
-     * alert will be triggered.
+     * are met. If a condition is met, an alert is added to the alerts list.
      *
      * @param patient the patient data to evaluate for alert conditions
+     * @return a list of generated alerts
      */
     public static List<Alert> evaluateData(Patient patient) {
         List<PatientRecord> records = dataStorage.getRecords(patient.getPatientId(), 0, System.currentTimeMillis());
@@ -61,10 +66,7 @@ public class AlertGenerator {
         checkHypotensiveHypoxemiaAlerts(patient, records, new BloodPressureStrategy(), new OxygenSaturationStrategy());
         checkECGDataAlerts(patient, records, new ECGStrategy());
         return alerts;
-
     }
-
-
 
     /**
      * Checks the ECG data for alerts related to abnormal heart rates and irregular beat patterns.
@@ -72,8 +74,9 @@ public class AlertGenerator {
      * are identified based on the time intervals between successive heartbeats, with a tolerance of 200 milliseconds
      * from the expected interval calculated based on the average beats per minute.
      *
-     * @param patient The patient whose ECG data is being checked.
-     * @param records A list of patient records containing heart rate data and associated timestamps.
+     * @param patient   The patient whose ECG data is being checked.
+     * @param records   A list of patient records containing heart rate data and associated timestamps.
+     * @param strategy  The strategy to use for evaluating ECG data.
      */
     private static void checkECGDataAlerts(Patient patient, List<PatientRecord> records, ECGStrategy strategy) {
         AlertFactory factory = new ECGAlertFactory();
@@ -93,16 +96,16 @@ public class AlertGenerator {
         }
     }
 
-
-
     /**
      * Checks for concurrent hypotension and hypoxemia within the patient's records.
      * Hypotension is identified by a systolic blood pressure below 90 mmHg. Hypoxemia is defined as
      * a blood saturation level below 92%. An alert is triggered if both conditions are found in the
      * same set of records.
      *
-     * @param patient The patient whose records are being evaluated.
-     * @param records A list of patient records that includes blood pressure and blood saturation measurements.
+     * @param patient    The patient whose records are being evaluated.
+     * @param records    A list of patient records that includes blood pressure and blood saturation measurements.
+     * @param bpStrategy The strategy to use for evaluating blood pressure data.
+     * @param satStrategy The strategy to use for evaluating blood saturation data.
      */
     private static void checkHypotensiveHypoxemiaAlerts(Patient patient, List<PatientRecord> records, BloodPressureStrategy bpStrategy, OxygenSaturationStrategy satStrategy) {
         AlertFactory factory = new BloodPressureAlertFactory();
@@ -124,30 +127,39 @@ public class AlertGenerator {
         }
     }
 
-
-
-
     /**
      * Checks for alerts related to blood saturation levels from patient records. It generates alerts for
      * low blood saturation when the level falls below 92%. Additionally, it checks for rapid drops in saturation,
      * triggering an alert if the saturation decreases by 5% or more within a 10-minute window.
      *
-     * @param patient The patient whose blood saturation is being monitored.
-     * @param records A list of patient records that include blood saturation measurements.
+     * @param patient   The patient whose blood saturation is being monitored.
+     * @param records   A list of patient records that include blood saturation measurements.
+     * @param strategy  The strategy to use for evaluating blood saturation data.
      */
     private static void checkBloodSaturationAlerts(Patient patient, List<PatientRecord> records, AlertStrategy strategy) {
         AlertFactory factory = new BloodOxygenAlertFactory();
+        OxygenSaturationStrategy oxygenStrategy = (OxygenSaturationStrategy) strategy;
 
         for (PatientRecord record : records) {
-            if (record.getRecordType().equals("BloodSaturation") && strategy.checkAlert(record)) {
-                Alert alert = factory.createAlert(record.getPatientId(), "LowBloodSaturation", record.getTimestamp());
-                alert = new PriorityAlertDecorator(alert, 2);  // Example of using decorator
-                triggerAlert(alert);
+            if (record.getRecordType().equals("BloodSaturation")) {
+                boolean alertTriggered = strategy.checkAlert(record);
+
+                if (alertTriggered) {
+                    if (oxygenStrategy.isLowSaturationAlert(record)) {
+                        Alert alert = factory.createAlert(record.getPatientId(), "LowBloodSaturation", record.getTimestamp());
+                        alert = new PriorityAlertDecorator(alert, 2);  // Example of using decorator
+                        triggerAlert(alert);
+                    }
+
+                    if (oxygenStrategy.isRapidDropAlert(record)) {
+                        Alert alert = factory.createAlert(record.getPatientId(), "RapidBloodSaturationDrop", record.getTimestamp());
+                        alert = new PriorityAlertDecorator(alert, 2);  // Example of using decorator
+                        triggerAlert(alert);
+                    }
+                }
             }
         }
     }
-
-
 
     /**
      * Monitors blood pressure records for significant trends and critical threshold breaches.
@@ -157,38 +169,61 @@ public class AlertGenerator {
      * pressure exceeds 180 mmHg, drops below 90 mmHg, or when diastolic pressure exceeds 120 mmHg or
      * falls below 60 mmHg.
      *
-     * @param patient The patient whose blood pressure is being monitored.
-     * @param records A list of patient records containing blood pressure measurements.
+     * @param patient   The patient whose blood pressure is being monitored.
+     * @param records   A list of patient records containing blood pressure measurements.
+     * @param strategy  The strategy to use for evaluating blood pressure data.
      */
     private static void checkBloodPressure(Patient patient, List<PatientRecord> records, AlertStrategy strategy) {
         AlertFactory factory = new BloodPressureAlertFactory();
+        BloodPressureStrategy bpStrategy = (BloodPressureStrategy) strategy;
 
         for (PatientRecord record : records) {
-            if (record.getRecordType().equals("BloodPressure") && strategy.checkAlert(record)) {
-                Alert alert = factory.createAlert(record.getPatientId(), "CriticalBloodPressureThreshold", record.getTimestamp());
-                alert = new RepeatedAlertDecorator(alert, 5);  // Example of using decorator
-                triggerAlert(alert);
+            if (record.getRecordType().equals("BloodPressure")) {
+                boolean alertTriggered = strategy.checkAlert(record);
+
+                if (alertTriggered) {
+                    Alert alert = null;
+
+                    if (bpStrategy.checkCriticalThresholdAlert(record)) {
+                        alert = factory.createAlert(record.getPatientId(), "CriticalBloodPressureThreshold", record.getTimestamp());
+                    } else if (bpStrategy.checkIncreasingSystolicTrend()) {
+                        alert = factory.createAlert(record.getPatientId(), "IncreasingSystolicBloodPressureTrend", record.getTimestamp());
+                    } else if (bpStrategy.checkDecreasingSystolicTrend()) {
+                        alert = factory.createAlert(record.getPatientId(), "DecreasingSystolicBloodPressureTrend", record.getTimestamp());
+                    } else if (bpStrategy.checkIncreasingDiastolicTrend()) {
+                        alert = factory.createAlert(record.getPatientId(), "IncreasingDiastolicBloodPressureTrend", record.getTimestamp());
+                    } else if (bpStrategy.checkDecreasingDiastolicTrend()) {
+                        alert = factory.createAlert(record.getPatientId(), "DecreasingDiastolicBloodPressureTrend", record.getTimestamp());
+                    }
+
+                    if (alert != null) {
+                        alert = new RepeatedAlertDecorator(alert, 5);  // Example of using decorator
+                        triggerAlert(alert);
+                    }
+                }
             }
         }
     }
 
-            /**
-             * Triggers an alert for the monitoring system. This method can be extended to
-             * notify medical staff, log the alert, or perform other actions. The method
-             * currently assumes that the alert information is fully formed when passed as
-             * an argument.
-             *
-             * @param alert the alert object containing details about the alert condition
-             */
+    /**
+     * Triggers an alert for the monitoring system. This method can be extended to
+     * notify medical staff, log the alert, or perform other actions. The method
+     * currently assumes that the alert information is fully formed when passed as
+     * an argument.
+     *
+     * @param alert the alert object containing details about the alert condition
+     */
+    protected static void triggerAlert(Alert alert) {
+        alerts.add(alert);
+        System.out.println("Alert triggered: " + alert.toString());
+    }
 
-            protected static void triggerAlert(Alert alert) {
-                alerts.add(alert);
-                System.out.println("Alert triggered: " + alert.toString());
-            }
-
+    /**
+     * Retrieves the list of generated alerts.
+     *
+     * @return the list of generated alerts
+     */
     public List<Alert> getAlerts() {
         return alerts;
     }
 }
-
-

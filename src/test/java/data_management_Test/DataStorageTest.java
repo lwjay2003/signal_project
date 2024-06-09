@@ -15,7 +15,8 @@ public class DataStorageTest {
 
     @BeforeEach
     public void setUp() {
-        dataStorage = new DataStorage();
+        DataStorage.resetInstance();
+        dataStorage = DataStorage.getInstance();
     }
 
     @Test
@@ -134,4 +135,3 @@ public class DataStorageTest {
         assertTrue(records.isEmpty());
     }
 }
-

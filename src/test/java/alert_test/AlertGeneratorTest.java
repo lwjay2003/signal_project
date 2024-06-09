@@ -10,7 +10,6 @@ import static com.alerts.AlertGenerator.evaluateData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AlertGeneratorTest {
-    private DataStorage storage;
     private AlertGenerator alertGenerator;
     private List<Alert> alerts;
 
@@ -18,7 +17,7 @@ public class AlertGeneratorTest {
     @Test
     void testAbnormalHeartRateAlerts() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
 
@@ -44,7 +43,7 @@ public class AlertGeneratorTest {
     @Test
     void testIrregularHeartBeatAlerts() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
         // Test case 1: Irregular heart beat with normal heart rates
@@ -74,7 +73,7 @@ public class AlertGeneratorTest {
     @Test
     void testHypotensiveHypoxemiaAlert() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
         // Test case 1: Hypotension and Hypoxemia Present
@@ -124,7 +123,7 @@ public class AlertGeneratorTest {
     @Test
     void testLowBloodSaturationAlerts() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
         // Test case 1: Low saturation
@@ -150,7 +149,7 @@ public class AlertGeneratorTest {
     @Test
     void testRapidBloodSaturationDropAlerts() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
         // Test case 1: Rapid Saturation Drop
@@ -176,7 +175,7 @@ public class AlertGeneratorTest {
     @Test
     void testBloodPressureTrendAlerts() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
         // Test case 1: Increasing Systolic Blood Pressure Trend
@@ -246,7 +245,7 @@ public class AlertGeneratorTest {
     @Test
     void testCriticalBloodPressureThresholdAlert() {
         alerts = new ArrayList<Alert>();
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
         AlertGenerator a = new AlertGenerator(storage, alerts);
 
         Patient p18 = new Patient(18);

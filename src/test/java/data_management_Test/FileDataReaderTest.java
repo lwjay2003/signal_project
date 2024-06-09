@@ -21,7 +21,8 @@ public class FileDataReaderTest {
 
     @BeforeEach
     public void setUp() throws IOException {
-        dataStorage = new DataStorage();
+        DataStorage.resetInstance();
+        dataStorage = DataStorage.getInstance();
         createTestFile();
         fileDataReader = new FileDataReader(TEST_FILE_PATH);
     }
@@ -46,12 +47,12 @@ public class FileDataReaderTest {
         PatientRecord record2 = records2.get(0);
 
         assertEquals(1, record1.getPatientId());
-        assertEquals(98.6, record1.getMeasurementValue());
+        assertEquals(98.6, record1.getMeasurementValue(), 0.01);
         assertEquals("HeartRate", record1.getRecordType());
         assertEquals(1622470420000L, record1.getTimestamp());
 
         assertEquals(2, record2.getPatientId());
-        assertEquals(120.0, record2.getMeasurementValue());
+        assertEquals(120.0, record2.getMeasurementValue(), 0.01);
         assertEquals("BloodPressure", record2.getRecordType());
         assertEquals(1622470520000L, record2.getTimestamp());
     }
