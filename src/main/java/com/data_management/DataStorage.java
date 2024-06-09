@@ -1,7 +1,6 @@
 package com.data_management;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,19 +16,23 @@ import com.alerts.Alert;
  */
 public class DataStorage {
     private Map<Integer, Patient> patientMap; // Stores patient objects indexed by their unique patient ID.
+    private static DataStorage instance;
 
     /**
      * Constructs a new instance of DataStorage, initializing the underlying storage
      * structure.
      */
-    public DataStorage() {
+    private DataStorage() {
         this.patientMap = new HashMap<>();
     }
-    private static DataStorage instance;
 
     public static DataStorage getInstance() {
         if (instance == null) {
-            instance = new DataStorage();
+            synchronized (DataStorage.class) {
+                if (instance == null) {
+                    instance = new DataStorage();
+                }
+            }
         }
         return instance;
     }
@@ -57,7 +60,6 @@ public class DataStorage {
         }
         patient.addRecord(measurementValue, recordType, timestamp);
     }
-
 
     public void addPatientData(int patientId, double[] measurementValues, String recordType, long timestamp) {
         Patient patient = patientMap.get(patientId);
@@ -98,19 +100,16 @@ public class DataStorage {
         return new ArrayList<>(patientMap.values());
     }
 
-    /**
-     * The main method for the DataStorage class.
-     * Initializes the system, reads data into storage, and continuously monitors
-     * and evaluates patient data.
-     * 
-     * @param args command line arguments
-     */
-    public static void main(String[] args) {
-        // DataReader is not defined in this scope, should be initialized appropriately.
+    public static void resetInstance() {
+        synchronized (DataStorage.class) {
+            instance = null;
+        }
+    }
 
-        String directoryPath = String.valueOf(args[0]);
+    public void runDataStorage() throws IOException {
+        String directoryPath = ""; // Define the appropriate directory path
         DataReader reader = new FileDataReader(directoryPath);
-        DataStorage storage = new DataStorage();
+        DataStorage storage = DataStorage.getInstance();
 
         try {
             reader.readData(storage);
@@ -118,10 +117,6 @@ public class DataStorage {
             System.err.println("Error reading data: " + e.getMessage());
             e.printStackTrace();
         }
-
-        // Assuming the reader has been properly initialized and can read data into the
-        // storage
-        //reader.readData(storage);
 
         // Example of using DataStorage to retrieve and print records for a patient
         List<PatientRecord> records = storage.getRecords(1, 1700000000000L, 1800000000000L);
@@ -140,8 +135,5 @@ public class DataStorage {
         for (Patient patient : storage.getAllPatients()) {
             alertGenerator.evaluateData(patient);
         }
-    }
-    public static synchronized void resetInstance() {
-        instance = null;
     }
 }

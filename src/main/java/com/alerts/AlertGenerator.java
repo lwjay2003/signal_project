@@ -2,6 +2,11 @@ package com.alerts;
 import com.data_management.DataStorage;
 import com.data_management.Patient;
 import com.data_management.PatientRecord;
+import com.strategies.AlertStrategy;
+import com.strategies.BloodPressureStrategy;
+import com.strategies.ECGStrategy;
+import com.strategies.OxygenSaturationStrategy;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,13 +55,12 @@ public class AlertGenerator {
      * @param patient the patient data to evaluate for alert conditions
      */
     public static List<Alert> evaluateData(Patient patient) {
-        List<PatientRecord> records = dataStorage.getRecords(patient.getPatientId(), 0,System.currentTimeMillis());
-        checkBloodPressure(patient, records);
-        checkBloodSaturationAlerts(patient, records);
-        checkHypotensiveHypoxemiaAlerts(patient, records);
-        checkECGDataAlerts(patient, records);
+        List<PatientRecord> records = dataStorage.getRecords(patient.getPatientId(), 0, System.currentTimeMillis());
+        checkBloodPressure(patient, records, new BloodPressureStrategy());
+        checkBloodSaturationAlerts(patient, records, new OxygenSaturationStrategy());
+        checkHypotensiveHypoxemiaAlerts(patient, records, new BloodPressureStrategy(), new OxygenSaturationStrategy());
+        checkECGDataAlerts(patient, records, new ECGStrategy());
         return alerts;
-
 
     }
 
@@ -71,34 +75,23 @@ public class AlertGenerator {
      * @param patient The patient whose ECG data is being checked.
      * @param records A list of patient records containing heart rate data and associated timestamps.
      */
-   private static void checkECGDataAlerts(Patient patient, List<PatientRecord> records) {
-        List<Long> timestamps = new ArrayList<>();
-        List<Double> heartRates = new ArrayList<>();
+    private static void checkECGDataAlerts(Patient patient, List<PatientRecord> records, ECGStrategy strategy) {
+        AlertFactory factory = new ECGAlertFactory();
 
         for (PatientRecord record : records) {
-            if (record.getRecordType().equals("HeartRate")) {
-                heartRates.add(record.getMeasurementValue());
-                timestamps.add(record.getTimestamp());
-
-                // Abnormal Heart Rate Alert
-                double heartRate = record.getMeasurementValue();
-                if (heartRate < 50 || heartRate > 100) {
-                    triggerAlert(new Alert(patient.getPatientId(), "AbnormalHeartRate", record.getTimestamp()));
-                }
+            if (record.getRecordType().equals("HeartRate") && strategy.checkAlert(record)) {
+                Alert alert = factory.createAlert(patient.getPatientId(), "AbnormalHeartRate", record.getTimestamp());
+                alert = new RepeatedAlertDecorator(alert, 3);
+                triggerAlert(alert);
             }
         }
 
-        // Check for Irregular Beat Patterns
-       for (int i = 1; i < timestamps.size(); i++) {
-           long interval = timestamps.get(i) - timestamps.get(i - 1);
-           if (interval != 0){
-               if (Math.abs(interval - 60000 / heartRates.get(i)) > 200) { // 200 ms tolerance for irregularity
-                   triggerAlert(new Alert(patient.getPatientId(), "IrregularHeartBeat", timestamps.get(i)));
-               }
-           }
-
-       }
-   }
+        if (strategy.checkIrregularBeat(records)) {
+            Alert alert = factory.createAlert(patient.getPatientId(), "IrregularHeartBeat", System.currentTimeMillis());
+            alert = new RepeatedAlertDecorator(alert, 3);
+            triggerAlert(alert);
+        }
+    }
 
 
 
@@ -111,25 +104,26 @@ public class AlertGenerator {
      * @param patient The patient whose records are being evaluated.
      * @param records A list of patient records that includes blood pressure and blood saturation measurements.
      */
-    private static void checkHypotensiveHypoxemiaAlerts(Patient patient, List<PatientRecord> records) {
+    private static void checkHypotensiveHypoxemiaAlerts(Patient patient, List<PatientRecord> records, BloodPressureStrategy bpStrategy, OxygenSaturationStrategy satStrategy) {
+        AlertFactory factory = new BloodPressureAlertFactory();
+
         for (PatientRecord record : records) {
-            if (record.getRecordType().equals("BloodPressure")) {
-                double systolic = record.getMeasurementValues()[0]; // Use the first value for systolic
-
-                // Check if there's a corresponding low saturation record
+            if (record.getRecordType().equals("BloodPressure") && bpStrategy.checkAlert(record)) {
+                double systolic = record.getMeasurementValues()[0];
                 for (PatientRecord saturationRecord : records) {
-                    if (saturationRecord.getRecordType().equals("BloodSaturation")) {
+                    if (saturationRecord.getRecordType().equals("BloodSaturation") && satStrategy.checkAlert(saturationRecord)) {
                         double saturation = saturationRecord.getMeasurementValue();
-
-
                         if (systolic < 90 && saturation < 92) {
-                            triggerAlert(new Alert(record.getPatientId(), "HypotensiveHypoxemiaAlert", record.getTimestamp()));
+                            Alert alert = factory.createAlert(record.getPatientId(), "HypotensiveHypoxemiaAlert", record.getTimestamp());
+                            alert = new PriorityAlertDecorator(alert, 1);  // Example of using decorator
+                            triggerAlert(alert);
                         }
                     }
                 }
             }
         }
     }
+
 
 
 
@@ -141,24 +135,14 @@ public class AlertGenerator {
      * @param patient The patient whose blood saturation is being monitored.
      * @param records A list of patient records that include blood saturation measurements.
      */
-    private static void checkBloodSaturationAlerts(Patient patient, List<PatientRecord> records) {
-        Double lastSaturation = null;
-        long lastTimestamp = -1;
+    private static void checkBloodSaturationAlerts(Patient patient, List<PatientRecord> records, AlertStrategy strategy) {
+        AlertFactory factory = new BloodOxygenAlertFactory();
 
         for (PatientRecord record : records) {
-            if (record.getRecordType().equals("BloodSaturation")) {
-                double saturation = record.getMeasurementValue();
-
-                //low saturation alert
-                if (saturation < 92) {
-                    triggerAlert(new Alert(record.getPatientId(), "LowBloodSaturation", record.getTimestamp()));
-                }
-                //rapid saturation drop alert
-                if (lastSaturation != null && (lastSaturation - saturation) >=  5 && (record.getTimestamp() - lastTimestamp)<= 600000) {
-                    triggerAlert(new Alert(record.getPatientId(), "RapidBloodSaturationDrop", record.getTimestamp()));
-                }
-                lastSaturation = saturation;
-                lastTimestamp = record.getTimestamp();
+            if (record.getRecordType().equals("BloodSaturation") && strategy.checkAlert(record)) {
+                Alert alert = factory.createAlert(record.getPatientId(), "LowBloodSaturation", record.getTimestamp());
+                alert = new PriorityAlertDecorator(alert, 2);  // Example of using decorator
+                triggerAlert(alert);
             }
         }
     }
@@ -176,80 +160,17 @@ public class AlertGenerator {
      * @param patient The patient whose blood pressure is being monitored.
      * @param records A list of patient records containing blood pressure measurements.
      */
-    private static void checkBloodPressure(Patient patient, List<PatientRecord> records) {
-        Double lastSystolic = null;
-        Double lastDiastolic = null;
-        int systolicIncreaseCount = 0;
-        int systolicDecreaseCount = 0;
-        int diastolicIncreaseCount = 0;
-        int diastolicDecreaseCount = 0;
+    private static void checkBloodPressure(Patient patient, List<PatientRecord> records, AlertStrategy strategy) {
+        AlertFactory factory = new BloodPressureAlertFactory();
 
         for (PatientRecord record : records) {
-            if (record.getRecordType().equals("BloodPressure")) {
-
-                double[] bpValues = record.getMeasurementValues();
-                double systolic = bpValues[0];
-                double diastolic = bpValues[1];
-                // Check for systolic trends
-                if (lastSystolic != null ) {
-                    if (systolic - lastSystolic > 10) {
-                        systolicIncreaseCount++;
-                        systolicDecreaseCount = 0;
-                    } else if (lastSystolic - systolic > 10) {
-                        systolicDecreaseCount++;
-                        systolicIncreaseCount = 0;
-                    } else {
-                        systolicIncreaseCount = 0;
-                        systolicDecreaseCount = 0;
-                    }
-
-                    if (systolicIncreaseCount >= 3) {
-                        triggerAlert(new Alert(record.getPatientId(), "IncreasingSystolicBloodPressureTrend", record.getTimestamp()));
-                        systolicIncreaseCount = 0;  // Reset after alerting
-                    }
-
-                    if (systolicDecreaseCount >= 3) {
-                        triggerAlert(new Alert(record.getPatientId(), "DecreasingSystolicBloodPressureTrend", record.getTimestamp()));
-                        systolicDecreaseCount = 0;  // Reset after alerting
-                    }
-                }
-
-                // Check for diastolic trends
-                if (lastDiastolic != null) {
-                    if (diastolic - lastDiastolic > 10) {
-                        diastolicIncreaseCount++;
-                        diastolicDecreaseCount = 0;
-                    } else if (lastDiastolic - diastolic > 10) {
-                        diastolicDecreaseCount++;
-                        diastolicIncreaseCount = 0;
-                    } else {
-                        diastolicIncreaseCount = 0;
-                        diastolicDecreaseCount = 0;
-                    }
-
-                    if (diastolicIncreaseCount >= 3) {
-                        triggerAlert(new Alert(record.getPatientId(), "IncreasingDiastolicBloodPressureTrend", record.getTimestamp()));
-                        diastolicIncreaseCount = 0;  // Reset after alerting
-                    }
-
-                    if (diastolicDecreaseCount >= 3) {
-                        triggerAlert(new Alert(record.getPatientId(), "DecreasingDiastolicBloodPressureTrend", record.getTimestamp()));
-                        diastolicDecreaseCount = 0;  // Reset after alerting
-                    }
-                }
-
-                // Check for critical blood pressure thresholds
-                if (systolic > 180 || systolic < 90 || diastolic > 120 || diastolic < 60) {
-                        triggerAlert(new Alert(record.getPatientId(), "CriticalBloodPressureThreshold", record.getTimestamp()));
-                    }
-
-                lastSystolic = systolic;
-                lastDiastolic = diastolic;
-                }
+            if (record.getRecordType().equals("BloodPressure") && strategy.checkAlert(record)) {
+                Alert alert = factory.createAlert(record.getPatientId(), "CriticalBloodPressureThreshold", record.getTimestamp());
+                alert = new RepeatedAlertDecorator(alert, 5);  // Example of using decorator
+                triggerAlert(alert);
             }
         }
-
-
+    }
 
             /**
              * Triggers an alert for the monitoring system. This method can be extended to

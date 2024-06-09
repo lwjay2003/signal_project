@@ -6,9 +6,9 @@ import java.io.IOException;
 public class Main {
     public static void main(String[] args) throws IOException {
         if (args.length > 0 && args[0].equals("DataStorage")) {
-            DataStorage.main(new String[]{});
+            DataStorage.getInstance().runDataStorage(); // Assuming a runDataStorage method is needed
         } else {
-            HealthDataSimulator.main(new String[]{});
+            HealthDataSimulator.getInstance().runSimulation(args);
         }
     }
 }
